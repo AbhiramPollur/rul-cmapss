@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+notebooks
+reports
+tests
+# The full C-MAPSS archive is large; the API image only needs the model
+# artifact, not the raw training data.
+data
+*.egg-info

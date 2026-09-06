@@ -1,0 +1,10 @@
+# Development + offline-analysis dependencies.
+-r requirements.txt
+
+# Data drift reporting (heavy; not needed to serve predictions)
+evidently==0.7.21
+
+# Testing & linting
+pytest==9.1.1
+httpx==0.28.1
+ruff==0.14.4
