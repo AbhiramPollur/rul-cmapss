@@ -171,6 +171,19 @@ columns); features are built server-side so clients never reimplement them.
 
 Returns `503` if no model artifact is loaded, `422` on malformed readings.
 
+### Docker
+
+```bash
+docker build -t rul-cmapss .
+docker run --rm -p 8000:8000 rul-cmapss   # -> http://127.0.0.1:8000/docs
+```
+
+The image (Debian-slim, multi-stage) installs only the runtime deps and bakes
+in the trained model, so the container serves predictions immediately. It runs
+as a non-root user and ships a stdlib `/health` HEALTHCHECK. See the
+[Dockerfile](Dockerfile) for the rationale (glibc base for the manylinux
+wheels, `libgomp1` for LightGBM's OpenMP runtime).
+
 ---
 
 ## Results
