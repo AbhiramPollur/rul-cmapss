@@ -205,6 +205,20 @@ from the training distribution and the model should be retrained.
 
 ---
 
+## Testing & CI
+
+```bash
+pytest        # 47 tests: data, features, evaluation, model, conformal, API, drift
+ruff check .  # lint
+```
+
+Tests run on small **synthetic** C-MAPSS fixtures (fast, deterministic, no data
+files needed), with a few integration tests that use the committed FD001 data
+and model artifact when present (they skip otherwise). GitHub Actions
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `ruff` + `pytest`
+on Python 3.14 for every push and pull request to `main`, installing the exact
+pinned versions so the committed model artifact unpickles cleanly.
+
 ## Results
 
 Final model on **FD001** (100 test engines, one prediction per engine at its

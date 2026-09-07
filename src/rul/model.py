@@ -80,7 +80,7 @@ class RULModel:
     # ------------------------------------------------------------------ #
     # Training
     # ------------------------------------------------------------------ #
-    def fit(self, train_df: pd.DataFrame, subset: str = "", conformalize: bool = True) -> "RULModel":
+    def fit(self, train_df: pd.DataFrame, subset: str = "", conformalize: bool = True) -> RULModel:
         """Train on a raw run-to-failure frame (RUL is derived internally).
 
         Engines are partitioned into a **fit pool** (for the point model) and a
@@ -234,7 +234,7 @@ class RULModel:
         return path
 
     @staticmethod
-    def load(path: str | Path | None = None) -> "RULModel":
+    def load(path: str | Path | None = None) -> RULModel:
         path = Path(path) if path is not None else MODELS_DIR / MODEL_FILENAME
         if not path.exists():
             raise FileNotFoundError(

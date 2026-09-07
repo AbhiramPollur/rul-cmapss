@@ -39,7 +39,7 @@ class FeatureBuilder:
     # ------------------------------------------------------------------ #
     # fit / transform
     # ------------------------------------------------------------------ #
-    def fit(self, df: pd.DataFrame) -> "FeatureBuilder":
+    def fit(self, df: pd.DataFrame) -> FeatureBuilder:
         """Select operational-setting/sensor columns that actually vary.
 
         Columns whose standard deviation across the training set is below

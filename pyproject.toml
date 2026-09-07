@@ -44,6 +44,9 @@ filterwarnings = ["ignore::DeprecationWarning"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
+# EDA notebooks use plotting idioms (trailing semicolons) that aren't worth
+# linting; the library and tests are the linted surface.
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

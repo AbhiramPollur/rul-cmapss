@@ -26,7 +26,7 @@ def test_raw_path_rejects_bad_split():
 # --------------------------------------------------------------------------- #
 def test_compute_rul_uncapped_is_linear(synthetic_train):
     labeled = data.compute_rul(synthetic_train, cap=None)
-    for unit, grp in labeled.groupby("unit"):
+    for _unit, grp in labeled.groupby("unit"):
         grp = grp.sort_values("cycle")
         # RUL at the final cycle is 0 and decreases by exactly 1 each cycle.
         assert grp["RUL"].iloc[-1] == 0

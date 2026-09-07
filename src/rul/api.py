@@ -37,7 +37,8 @@ _reading_fields: dict = {
 for _c in SETTING_COLS:
     _reading_fields[_c] = (float, Field(..., description=f"Operational setting {_c[-1]}."))
 for _c in SENSOR_COLS:
-    _reading_fields[_c] = (float, Field(..., description=f"Sensor measurement {_c.split('_')[-1]}."))
+    _num = _c.split("_")[-1]
+    _reading_fields[_c] = (float, Field(..., description=f"Sensor measurement {_num}."))
 
 CycleReading = create_model("CycleReading", **_reading_fields)
 
