@@ -86,9 +86,10 @@ Rationale for every non-obvious choice. (Expanded as milestones land.)
 
 ### Features
 - **Per-engine rolling statistics.** `mean/std/min/max` over the last
-  `ROLLING_WINDOW = 5` cycles, computed within each engine so windows never
+  `ROLLING_WINDOW = 30` cycles, computed within each engine so windows never
   cross engine boundaries. This injects the temporal trend a tree model cannot
-  see from a single cycle.
+  see from a single cycle. The window was chosen by a sweep on FD001
+  (5/10/15/20/30/40) — 30 minimized **both** RMSE and the NASA score.
 - **Drop constant sensors automatically.** Under one operating condition
   several sensors are constant (FD001: 1, 5, 6, 10, 16, 18, 19). They are
   removed by a variance threshold rather than a hard-coded list, so the same
@@ -146,13 +147,29 @@ sections below as they are added.
 
 ## Results
 
-_Filled in after milestone 4 (training + evaluation on FD001)._
+LightGBM baseline on **FD001** (100 test engines, one prediction per engine at
+its last observed cycle vs. the provided true RUL):
 
 | Metric | FD001 test |
 |--------|-----------|
-| RMSE   | _TBD_     |
-| NASA score | _TBD_ |
-| Conformal coverage @ 90% | _TBD_ |
+| RMSE   | **17.7 cycles** |
+| NASA score | **615** |
+| Mean absolute error | 12.6 cycles |
+| Mean error (bias) | +0.26 (near-unbiased) |
+| Conformal coverage @ 90% | _TBD (milestone 5)_ |
+
+Rolling-window sweep that fixed the default window (all else equal):
+
+| window | RMSE | NASA |
+|-------:|-----:|-----:|
+| 5  | 18.85 | 665 |
+| 10 | 19.12 | 781 |
+| 20 | 17.98 | 625 |
+| **30** | **17.73** | **615** |
+| 40 | 18.11 | 760 |
+
+This is a deliberately simple tabular baseline; sensor denoising and sequence
+models (LSTM/CNN) are the natural next steps and typically reach RMSE ~12–14.
 
 ---
 

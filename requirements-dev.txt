@@ -8,3 +8,10 @@ evidently==0.7.21
 pytest==9.1.1
 httpx==0.28.1
 ruff==0.14.4
+
+# EDA notebook (notebooks/ is EDA-only). matplotlib for plots; nbconvert +
+# ipykernel so the notebook can be executed headless (CI does not run it).
+matplotlib==3.11.0
+nbconvert==7.16.6
+ipykernel==7.1.0
+

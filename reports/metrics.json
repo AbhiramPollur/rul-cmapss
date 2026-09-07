@@ -1,0 +1,38 @@
+{
+  "subset": "FD001",
+  "test": {
+    "n": 100,
+    "rmse": 17.732941853789796,
+    "nasa_score": 615.28796902575,
+    "mean_abs_error": 12.594722170220777,
+    "mean_error": 0.26209405395680724
+  },
+  "model": {
+    "subset": "FD001",
+    "rul_cap": 125,
+    "window": 30,
+    "best_iteration": 168,
+    "n_features": 86,
+    "kept_columns": [
+      "op_setting_1",
+      "op_setting_2",
+      "sensor_2",
+      "sensor_3",
+      "sensor_4",
+      "sensor_6",
+      "sensor_7",
+      "sensor_8",
+      "sensor_9",
+      "sensor_11",
+      "sensor_12",
+      "sensor_13",
+      "sensor_14",
+      "sensor_15",
+      "sensor_17",
+      "sensor_20",
+      "sensor_21"
+    ],
+    "n_train_rows": 20631,
+    "n_train_engines": 100
+  }
+}

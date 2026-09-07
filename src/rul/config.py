@@ -50,8 +50,9 @@ RUL_CAP: int = 125
 # --------------------------------------------------------------------------- #
 # Rolling-window statistics are computed *per engine* over the most recent
 # ROLLING_WINDOW cycles. Larger windows smooth sensor noise but blur the
-# fault onset; 5 is a good default for FD001's ~200-cycle trajectories.
-ROLLING_WINDOW: int = 5
+# fault onset. A sweep on FD001 (5/10/15/20/30/40; see README → Model) found
+# 30 best on *both* RMSE and the NASA score for these ~200-cycle trajectories.
+ROLLING_WINDOW: int = 30
 # Statistics computed inside each rolling window.
 ROLLING_STATS: tuple[str, ...] = ("mean", "std", "min", "max")
 # Sensors are dropped when their standard deviation across the whole training
