@@ -143,6 +143,34 @@ uvicorn rul.api:app --reload
 More commands (Docker, drift report) are documented in their milestone
 sections below as they are added.
 
+### API
+
+`uvicorn rul.api:app` serves:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/health` | readiness + loaded model version |
+| POST | `/predict` | RUL point + conformal interval for one engine |
+| GET | `/docs` | interactive OpenAPI docs |
+
+`POST /predict` takes a window of **raw** cycles for one engine (the C-MAPSS
+columns); features are built server-side so clients never reimplement them.
+
+```jsonc
+// request  (readings: oldest-first cycles; >= 30 cycles recommended)
+{ "unit_id": 42,
+  "readings": [ { "cycle": 1, "op_setting_1": -0.0007, "op_setting_2": -0.0004,
+                  "op_setting_3": 100.0, "sensor_1": 518.67, "sensor_2": 641.82,
+                  "...": "... all 21 sensors ..." } ] }
+
+// response
+{ "unit_id": 42, "cycle": 45, "rul": 80.7,
+  "rul_lower": 55.8, "rul_upper": 105.5,
+  "confidence_level": 0.9, "n_cycles_used": 45, "model_version": "0.1.0+FD001" }
+```
+
+Returns `503` if no model artifact is loaded, `422` on malformed readings.
+
 ---
 
 ## Results
