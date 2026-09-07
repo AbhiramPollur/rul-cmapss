@@ -49,11 +49,11 @@ RUL_CAP: int = 125
 # --------------------------------------------------------------------------- #
 # Feature engineering
 # --------------------------------------------------------------------------- #
-# Rolling-window statistics are computed *per engine* over the most recent
-# ROLLING_WINDOW cycles. Larger windows smooth sensor noise but blur the
-# fault onset. A sweep on FD001 (5/10/15/20/30/40; see README → Model) found
-# 30 best on *both* RMSE and the NASA score for these ~200-cycle trajectories.
-ROLLING_WINDOW: int = 30
+# Rolling-window statistics are computed per engine over the most recent
+# ROLLING_WINDOW cycles. This is only the library default; the window that each
+# subset actually uses is set in PROFILES below and was chosen by grouped
+# cross-validation on the training data.
+ROLLING_WINDOW: int = 40
 # Statistics computed inside each rolling window.
 ROLLING_STATS: tuple[str, ...] = ("mean", "std", "min", "max")
 # Sensors are dropped when their standard deviation across the whole training
@@ -83,10 +83,12 @@ METRICS_FILENAME: str = "metrics.json"
 # Per-subset profiles
 # --------------------------------------------------------------------------- #
 # Single-condition subsets (FD001/FD003) use the plain rolling pipeline.
-# Multi-condition subsets (FD002/FD004) turn on regime normalization + EWMA
-# denoising + trend features and a larger window/cap; they also have ~2.5x more
-# engines, so a smaller calibration holdout still gives ample conformal data
-# while leaving more engines for the point model.
+# Multi-condition subsets (FD002/FD004) turn on regime normalization plus EWMA
+# denoising and trend features, with a larger window. They also have about 2.5x
+# more engines, so a smaller calibration holdout still leaves plenty of data to
+# calibrate the intervals while giving the point model more to learn from.
+# Every window and cap below was picked by grouped cross-validation on the
+# training set only; the test set was never used to choose them.
 @dataclass(frozen=True)
 class SubsetProfile:
     window: int
@@ -99,15 +101,15 @@ class SubsetProfile:
 
 
 PROFILES: dict[str, SubsetProfile] = {
-    "FD001": SubsetProfile(window=30, rul_cap=125),
-    "FD003": SubsetProfile(window=30, rul_cap=125),
+    "FD001": SubsetProfile(window=40, rul_cap=125),
+    "FD003": SubsetProfile(window=40, rul_cap=125),
     "FD002": SubsetProfile(
-        window=80, rul_cap=150, regime_normalize=True, n_regimes=6,
-        ewma_span=25, trend=True, calibration_fraction=0.1,
+        window=80, rul_cap=140, regime_normalize=True, n_regimes=6,
+        ewma_span=26, trend=True, calibration_fraction=0.1,
     ),
     "FD004": SubsetProfile(
-        window=80, rul_cap=150, regime_normalize=True, n_regimes=6,
-        ewma_span=25, trend=True, calibration_fraction=0.1,
+        window=80, rul_cap=140, regime_normalize=True, n_regimes=6,
+        ewma_span=26, trend=True, calibration_fraction=0.1,
     ),
 }
 

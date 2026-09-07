@@ -7,7 +7,7 @@ engines) and drops sensors that are constant under the operating condition.
 
 The builder is stateful: :meth:`fit` learns *which* columns to keep from the
 training set, and :meth:`transform` applies the exact same layout to train,
-test and live-serving data — guaranteeing the model always sees identical
+test and live-serving data, guaranteeing the model always sees identical
 feature columns in identical order.
 """
 from __future__ import annotations

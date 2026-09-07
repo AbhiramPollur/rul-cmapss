@@ -1,5 +1,5 @@
 {
-  "subset": "FD001",
+  "subset": "FD003",
   "rul_cap": 125,
   "window": 40,
   "regime_normalize": false,
@@ -8,8 +8,8 @@
   "trend": false,
   "confidence_level": 0.9,
   "calibration_fraction": 0.2,
-  "best_iteration": 198,
-  "n_features": 86,
+  "best_iteration": 187,
+  "n_features": 91,
   "kept_columns": [
     "op_setting_1",
     "op_setting_2",
@@ -20,6 +20,7 @@
     "sensor_7",
     "sensor_8",
     "sensor_9",
+    "sensor_10",
     "sensor_11",
     "sensor_12",
     "sensor_13",
@@ -29,7 +30,7 @@
     "sensor_20",
     "sensor_21"
   ],
-  "n_train_rows": 20631,
+  "n_train_rows": 24720,
   "n_train_engines": 100,
   "n_pool_engines": 80,
   "n_calib_engines": 20,

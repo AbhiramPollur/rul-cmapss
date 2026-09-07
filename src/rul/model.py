@@ -7,13 +7,13 @@ API and tests reproduce training-time features exactly.
 
 Design notes
 ------------
-* **Why LightGBM** — a strong, fast tabular baseline that handles the
+* **Why LightGBM**, a strong, fast tabular baseline that handles the
   engineered features natively; a sensible reference before any sequence model.
-* **Grouped early-stopping split** — the validation set is chosen by *engine*
+* **Grouped early-stopping split**, the validation set is chosen by *engine*
   (``GroupShuffleSplit``) so no engine's cycles appear in both fit and
   validation. We then refit on *all* engines using the best iteration found.
-* **No feature scaling** — tree ensembles are invariant to monotone transforms.
-* **Prediction clipping** — RUL cannot be negative and the capped target means
+* **No feature scaling**, tree ensembles are invariant to monotone transforms.
+* **Prediction clipping**, RUL cannot be negative and the capped target means
   the model never learned values above ``rul_cap``; predictions are clipped to
   ``[0, rul_cap]``.
 """
@@ -37,13 +37,21 @@ from .config import (
     RANDOM_SEED,
     ROLLING_WINDOW,
     RUL_CAP,
+    RUL_COL,
     VALIDATION_FRACTION,
     SubsetProfile,
 )
-from .conformal import fit_split_conformal, intervals_from_mapie
+from .conformal import (
+    fit_split_conformal,
+    intervals_from_mapie,
+    operational_snapshot_indices,
+)
 from .data import compute_rul, last_cycle_rows
 from .features import FeatureBuilder, make_xy
 from .regime import RegimeFeatureBuilder
+
+# Mid-life snapshots sampled per calibration engine (see rul.conformal).
+CALIB_SNAPSHOTS_PER_ENGINE = 12
 
 # LightGBM hyperparameters. Modest, reproducible defaults tuned for FD001's
 # size; documented in the README. objective="regression" (L2) aligns the
@@ -189,11 +197,24 @@ class RULModel:
         # "X has no valid feature names" warning at conformalization time.
         self.regressor.fit(X_pool.to_numpy(), y_pool.to_numpy())
 
-        # 4) Calibrate conformal intervals on the held-out calibration engines.
+        # 4) Calibrate conformal intervals on mid-life snapshots of the held-out
+        #    engines, matching the truncated-snapshot test protocol. Features are
+        #    built over each engine's full history first, then snapshot rows are
+        #    selected, so the rolling/trend features stay correct.
         self.conformal = None
         if conformalize and df_calib is not None:
+            X_calib_full = self.feature_builder.transform(df_calib)
+            snap = operational_snapshot_indices(
+                df_calib,
+                per_engine=CALIB_SNAPSHOTS_PER_ENGINE,
+                rul_min=5.0,
+                rul_max=float(self.rul_cap),
+                seed=RANDOM_SEED,
+            )
+            X_calib = X_calib_full.iloc[snap].to_numpy()
+            y_calib = df_calib[RUL_COL].to_numpy(dtype=float)[snap]
             self.conformal = fit_split_conformal(
-                self.regressor, self.feature_builder, df_calib, self.confidence_level
+                self.regressor, X_calib, y_calib, self.confidence_level
             )
 
         self.metadata = {
@@ -235,7 +256,7 @@ class RULModel:
         """One prediction per engine, at its last observed cycle.
 
         Rolling features are computed over each engine's full trajectory before
-        the final cycle is selected — the standard C-MAPSS test protocol.
+        the final cycle is selected, the standard C-MAPSS test protocol.
         """
         self._check_fitted()
         frame = df.reset_index(drop=True)

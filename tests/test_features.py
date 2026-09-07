@@ -59,7 +59,7 @@ def test_no_cross_engine_leakage():
     for _unit, grp in tagged.groupby("_unit"):
         first = grp.sort_values("_cycle").iloc[0]
         # At an engine's first cycle the window contains only that row, so every
-        # rolling stat equals the raw value — impossible if a prior engine leaked.
+        # rolling stat equals the raw value, impossible if a prior engine leaked.
         for col in builder.kept_columns_:
             assert first[f"{col}_roll{w}_mean"] == pytest.approx(first[col])
             assert first[f"{col}_roll{w}_min"] == pytest.approx(first[col])

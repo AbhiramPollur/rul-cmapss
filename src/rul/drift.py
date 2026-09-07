@@ -11,7 +11,7 @@ inputs. The reference is the training data; the current data defaults to the
 test set.
 
 Note: comparing FD001 *train* (full run-to-failure) with FD001 *test*
-(trajectories truncated before failure) legitimately shows drift — the test
+(trajectories truncated before failure) legitimately shows drift, the test
 data simply contains fewer near-failure cycles. Comparing against a different
 subset (e.g. ``--current-subset FD002``, six operating conditions) shows much
 larger, operating-condition drift.

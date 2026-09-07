@@ -4,8 +4,8 @@ Two metrics are reported together on purpose:
 
 * **RMSE** is symmetric and easy to interpret (cycles of error).
 * **NASA score** (PHM08 challenge) is *asymmetric*: it penalizes **late**
-  predictions — estimating more remaining life than the engine actually has,
-  the unsafe direction — more heavily than early ones. A model can improve
+  predictions, estimating more remaining life than the engine actually has,
+  the unsafe direction, more heavily than early ones. A model can improve
   RMSE while getting worse on the metric that matters for safety, so we never
   look at one without the other.
 """

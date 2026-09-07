@@ -4,7 +4,7 @@ The raw files are whitespace-separated with 26 unnamed columns. This module
 turns them into tidy, typed :class:`pandas.DataFrame` objects and derives the
 Remaining Useful Life (RUL) target used for supervised training.
 
-Nothing here does feature engineering or modeling — those live in
+Nothing here does feature engineering or modeling, those live in
 :mod:`rul.features` and :mod:`rul.model`.
 """
 from __future__ import annotations

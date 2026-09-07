@@ -10,7 +10,7 @@ literature is:
 
 :class:`RegimeNormalizer` does that. :class:`RegimeFeatureBuilder` builds on it
 with EWMA denoising, per-engine rolling statistics and short-horizon trend
-features — the recipe that takes FD004 under 20 RMSE.
+features, the recipe that takes FD004 under 20 RMSE.
 
 Both are **causal**: every feature at cycle *t* depends only on cycles ≤ *t* of
 the same engine (verified by a truncation-invariance test), so the single

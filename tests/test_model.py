@@ -60,7 +60,7 @@ def test_load_missing_raises(tmp_path):
 
 def test_model_learns_signal(fast_model, synthetic_train_large):
     """On the synthetic data (monotone degradation) the model should beat a
-    naive mean predictor on RMSE — a sanity check that training works."""
+    naive mean predictor on RMSE, a sanity check that training works."""
     from rul.data import compute_rul
     from rul.evaluation import rmse
 

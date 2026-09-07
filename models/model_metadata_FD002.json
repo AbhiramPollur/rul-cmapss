@@ -1,5 +1,5 @@
 {
-  "subset": "FD004",
+  "subset": "FD002",
   "rul_cap": 140,
   "window": 80,
   "regime_normalize": true,
@@ -8,7 +8,7 @@
   "trend": true,
   "confidence_level": 0.9,
   "calibration_fraction": 0.1,
-  "best_iteration": 788,
+  "best_iteration": 870,
   "n_features": 121,
   "kept_columns": [
     "sensor_2",
@@ -29,9 +29,9 @@
     "sensor_20",
     "sensor_21"
   ],
-  "n_train_rows": 61249,
-  "n_train_engines": 249,
-  "n_pool_engines": 224,
-  "n_calib_engines": 25,
+  "n_train_rows": 53759,
+  "n_train_engines": 260,
+  "n_pool_engines": 234,
+  "n_calib_engines": 26,
   "conformalized": true
 }
