@@ -50,3 +50,39 @@ def make_cmapss_frame(
         n = int(rng.integers(min_cycles, max_cycles + 1))
         frames.append(make_engine(unit, n, rng))
     return pd.concat(frames, ignore_index=True)[ALL_COLS]
+
+
+def make_multiregime_frame(
+    n_units: int = 12,
+    n_regimes: int = 3,
+    min_cycles: int = 40,
+    max_cycles: int = 90,
+    seed: int = 0,
+) -> pd.DataFrame:
+    """Synthetic multi-condition data (like FD002/FD004).
+
+    Each cycle is in one of ``n_regimes`` operating conditions (well-separated
+    op-setting clusters). Sensors have a large **regime-dependent baseline**
+    (what regime normalization must remove) plus a smaller monotone degradation
+    drift (the signal that should survive normalization).
+    """
+    rng = np.random.default_rng(seed)
+    centers = rng.normal(0.0, 10.0, size=(n_regimes, len(SETTING_COLS)))
+    baselines = rng.normal(0.0, 60.0, size=(n_regimes, len(SENSOR_COLS)))
+    frames = []
+    for unit in range(1, n_units + 1):
+        n = int(rng.integers(min_cycles, max_cycles + 1))
+        cycles = np.arange(1, n + 1, dtype=int)
+        frac = (cycles - 1) / max(n - 1, 1)
+        reg = rng.integers(0, n_regimes, size=n)
+        data: dict[str, np.ndarray] = {
+            "unit": np.full(n, unit, dtype=int),
+            "cycle": cycles,
+        }
+        for j, col in enumerate(SETTING_COLS):
+            data[col] = centers[reg, j] + rng.normal(0.0, 0.05, n)
+        for i, col in enumerate(SENSOR_COLS):
+            drift = 15.0 * frac * (1.0 if i % 2 == 0 else -1.0)
+            data[col] = 100.0 + baselines[reg, i] + drift + rng.normal(0.0, 0.3, n)
+        frames.append(pd.DataFrame(data))
+    return pd.concat(frames, ignore_index=True)[ALL_COLS]

@@ -1,0 +1,53 @@
+{
+  "subset": "FD004",
+  "test": {
+    "n": 248,
+    "rmse": 19.46137495764629,
+    "nasa_score": 2064.5450391189643,
+    "mean_abs_error": 13.867915180244866,
+    "mean_error": -0.7505123372453919
+  },
+  "conformal": {
+    "confidence_level": 0.9,
+    "coverage": 0.8629032258064516,
+    "avg_interval_width": 58.44281661058367,
+    "median_interval_width": 61.35618111338903
+  },
+  "model": {
+    "subset": "FD004",
+    "rul_cap": 150,
+    "window": 80,
+    "regime_normalize": true,
+    "n_regimes": 6,
+    "ewma_span": 25,
+    "trend": true,
+    "confidence_level": 0.9,
+    "calibration_fraction": 0.1,
+    "best_iteration": 1069,
+    "n_features": 121,
+    "kept_columns": [
+      "sensor_2",
+      "sensor_3",
+      "sensor_4",
+      "sensor_6",
+      "sensor_7",
+      "sensor_8",
+      "sensor_9",
+      "sensor_10",
+      "sensor_11",
+      "sensor_12",
+      "sensor_13",
+      "sensor_14",
+      "sensor_15",
+      "sensor_16",
+      "sensor_17",
+      "sensor_20",
+      "sensor_21"
+    ],
+    "n_train_rows": 61249,
+    "n_train_engines": 249,
+    "n_pool_engines": 224,
+    "n_calib_engines": 25,
+    "conformalized": true
+  }
+}

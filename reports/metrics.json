@@ -17,7 +17,12 @@
     "subset": "FD001",
     "rul_cap": 125,
     "window": 30,
+    "regime_normalize": false,
+    "n_regimes": 1,
+    "ewma_span": null,
+    "trend": false,
     "confidence_level": 0.9,
+    "calibration_fraction": 0.2,
     "best_iteration": 322,
     "n_features": 86,
     "kept_columns": [

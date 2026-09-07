@@ -38,10 +38,12 @@ from .config import (
     ROLLING_WINDOW,
     RUL_CAP,
     VALIDATION_FRACTION,
+    SubsetProfile,
 )
 from .conformal import fit_split_conformal, intervals_from_mapie
 from .data import compute_rul, last_cycle_rows
 from .features import FeatureBuilder, make_xy
+from .regime import RegimeFeatureBuilder
 
 # LightGBM hyperparameters. Modest, reproducible defaults tuned for FD001's
 # size; documented in the README. objective="regression" (L2) aligns the
@@ -60,7 +62,19 @@ DEFAULT_PARAMS: dict = {
     "n_jobs": -1,
     "verbosity": -1,
 }
+# Multi-condition subsets have more data and a much larger, denoised feature
+# set, so they warrant more (slower) trees and stronger regularization.
+REGIME_PARAMS: dict = {
+    **DEFAULT_PARAMS,
+    "n_estimators": 6000,
+    "learning_rate": 0.015,
+    "num_leaves": 63,
+    "min_child_samples": 50,
+    "colsample_bytree": 0.7,
+    "reg_lambda": 3.0,
+}
 EARLY_STOPPING_ROUNDS = 75
+REGIME_EARLY_STOPPING_ROUNDS = 200
 
 
 @dataclass
@@ -70,12 +84,48 @@ class RULModel:
     rul_cap: int = RUL_CAP
     window: int = ROLLING_WINDOW
     confidence_level: float = CONFIDENCE_LEVEL
+    calibration_fraction: float = CALIBRATION_FRACTION
+    # Regime pipeline (multi-condition subsets); defaults keep the plain
+    # FD001 pipeline byte-identical.
+    regime_normalize: bool = False
+    n_regimes: int = 6
+    ewma_span: int | None = None
+    trend: bool = False
+    early_stopping_rounds: int = EARLY_STOPPING_ROUNDS
     params: dict = field(default_factory=lambda: dict(DEFAULT_PARAMS))
-    feature_builder: FeatureBuilder = field(default_factory=FeatureBuilder)
+    feature_builder: object = field(default_factory=FeatureBuilder)
     regressor: lgb.LGBMRegressor | None = None
     # MAPIE SplitConformalRegressor, calibrated on held-out engines (see fit).
     conformal: object | None = None
     metadata: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_profile(cls, profile: SubsetProfile, **kwargs) -> RULModel:
+        """Construct a model configured for a subset's :class:`SubsetProfile`."""
+        if profile.regime_normalize:
+            kwargs.setdefault("params", dict(REGIME_PARAMS))
+            kwargs.setdefault("early_stopping_rounds", REGIME_EARLY_STOPPING_ROUNDS)
+        return cls(
+            rul_cap=profile.rul_cap,
+            window=profile.window,
+            calibration_fraction=profile.calibration_fraction,
+            regime_normalize=profile.regime_normalize,
+            n_regimes=profile.n_regimes,
+            ewma_span=profile.ewma_span,
+            trend=profile.trend,
+            **kwargs,
+        )
+
+    def _new_builder(self):
+        """Fresh, unfitted feature builder matching this model's configuration."""
+        if self.regime_normalize:
+            return RegimeFeatureBuilder(
+                window=self.window,
+                ewma_span=self.ewma_span or 25,
+                trend=self.trend,
+                n_regimes=self.n_regimes,
+            )
+        return FeatureBuilder(window=self.window)
 
     # ------------------------------------------------------------------ #
     # Training
@@ -93,7 +143,7 @@ class RULModel:
         # 1) Reserve calibration engines, unseen by the point model.
         if conformalize:
             calib_splitter = GroupShuffleSplit(
-                n_splits=1, test_size=CALIBRATION_FRACTION, random_state=RANDOM_SEED
+                n_splits=1, test_size=self.calibration_fraction, random_state=RANDOM_SEED
             )
             pool_idx, calib_idx = next(
                 calib_splitter.split(labeled, groups=labeled["unit"])
@@ -111,7 +161,7 @@ class RULModel:
         df_tr = df_pool.iloc[train_idx]
         df_va = df_pool.iloc[val_idx]
 
-        tuning_builder = FeatureBuilder(window=self.window)
+        tuning_builder = self._new_builder()
         X_tr, y_tr = make_xy(df_tr, tuning_builder, fit=True)
         X_va, y_va = make_xy(df_va, tuning_builder, fit=False)
 
@@ -123,14 +173,14 @@ class RULModel:
             eval_y=y_va,
             eval_metric="l2",
             callbacks=[
-                lgb.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False),
+                lgb.early_stopping(self.early_stopping_rounds, verbose=False),
                 lgb.log_evaluation(0),
             ],
         )
         best_iter = int(tuner.best_iteration_ or self.params["n_estimators"])
 
         # 3) Refit the point model on the whole fit pool at the best iteration.
-        self.feature_builder = FeatureBuilder(window=self.window)
+        self.feature_builder = self._new_builder()
         X_pool, y_pool = make_xy(df_pool, self.feature_builder, fit=True)
         final_params = {**self.params, "n_estimators": best_iter}
         self.regressor = lgb.LGBMRegressor(**final_params)
@@ -150,7 +200,12 @@ class RULModel:
             "subset": subset,
             "rul_cap": self.rul_cap,
             "window": self.window,
+            "regime_normalize": self.regime_normalize,
+            "n_regimes": self.n_regimes if self.regime_normalize else 1,
+            "ewma_span": self.ewma_span if self.regime_normalize else None,
+            "trend": self.trend,
             "confidence_level": self.confidence_level,
+            "calibration_fraction": self.calibration_fraction,
             "best_iteration": best_iter,
             "n_features": len(self.feature_builder.feature_names_),
             "kept_columns": list(self.feature_builder.kept_columns_),

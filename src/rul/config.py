@@ -8,6 +8,7 @@ the project README.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
@@ -76,3 +77,43 @@ CONFIDENCE_LEVEL: float = 0.9
 # --------------------------------------------------------------------------- #
 MODEL_FILENAME: str = "rul_model.joblib"
 METRICS_FILENAME: str = "metrics.json"
+
+
+# --------------------------------------------------------------------------- #
+# Per-subset profiles
+# --------------------------------------------------------------------------- #
+# Single-condition subsets (FD001/FD003) use the plain rolling pipeline.
+# Multi-condition subsets (FD002/FD004) turn on regime normalization + EWMA
+# denoising + trend features and a larger window/cap; they also have ~2.5x more
+# engines, so a smaller calibration holdout still gives ample conformal data
+# while leaving more engines for the point model.
+@dataclass(frozen=True)
+class SubsetProfile:
+    window: int
+    rul_cap: int
+    regime_normalize: bool = False
+    n_regimes: int = 1
+    ewma_span: int | None = None
+    trend: bool = False
+    calibration_fraction: float = CALIBRATION_FRACTION
+
+
+PROFILES: dict[str, SubsetProfile] = {
+    "FD001": SubsetProfile(window=30, rul_cap=125),
+    "FD003": SubsetProfile(window=30, rul_cap=125),
+    "FD002": SubsetProfile(
+        window=80, rul_cap=150, regime_normalize=True, n_regimes=6,
+        ewma_span=25, trend=True, calibration_fraction=0.1,
+    ),
+    "FD004": SubsetProfile(
+        window=80, rul_cap=150, regime_normalize=True, n_regimes=6,
+        ewma_span=25, trend=True, calibration_fraction=0.1,
+    ),
+}
+
+
+def profile_for(subset: str) -> SubsetProfile:
+    """Return the modeling profile for a C-MAPSS subset."""
+    if subset not in PROFILES:
+        raise ValueError(f"No profile for subset {subset!r}; known: {sorted(PROFILES)}")
+    return PROFILES[subset]

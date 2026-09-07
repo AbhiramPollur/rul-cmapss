@@ -19,6 +19,7 @@ from .config import (
     MODEL_FILENAME,
     MODELS_DIR,
     REPORTS_DIR,
+    profile_for,
 )
 from .data import load_subset, load_true_rul
 from .evaluation import interval_report, regression_report
@@ -32,8 +33,12 @@ def train_and_evaluate(subset: str = DEFAULT_SUBSET) -> dict:
     test_df = load_subset(subset, "test")
     true_rul = load_true_rul(subset)
 
-    print(f"[train] fitting RULModel on {train_df['unit'].nunique()} engines ...")
-    model = RULModel().fit(train_df, subset=subset)
+    profile = profile_for(subset)
+    print(
+        f"[train] fitting RULModel on {train_df['unit'].nunique()} engines "
+        f"(regime_normalize={profile.regime_normalize}) ..."
+    )
+    model = RULModel.from_profile(profile).fit(train_df, subset=subset)
 
     print("[train] evaluating on the test set (last cycle per engine) ...")
     preds = model.predict_last_cycle(test_df)
@@ -57,11 +62,18 @@ def train_and_evaluate(subset: str = DEFAULT_SUBSET) -> dict:
         "model": model.metadata,
     }
 
+    # FD001 keeps the canonical filenames (it is the API's default served model);
+    # other subsets get suffixed artifacts so they don't overwrite it.
+    is_default = subset == DEFAULT_SUBSET
+    model_name = MODEL_FILENAME if is_default else f"rul_model_{subset}.joblib"
+    metadata_name = "model_metadata.json" if is_default else f"model_metadata_{subset}.json"
+    metrics_name = METRICS_FILENAME if is_default else f"metrics_{subset}.json"
+
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    model_path = model.save(MODELS_DIR / MODEL_FILENAME)
-    model.save_metadata(MODELS_DIR / "model_metadata.json")
-    metrics_path = REPORTS_DIR / METRICS_FILENAME
+    model_path = model.save(MODELS_DIR / model_name)
+    model.save_metadata(MODELS_DIR / metadata_name)
+    metrics_path = REPORTS_DIR / metrics_name
     metrics_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     print(f"[train] saved model  -> {model_path}")
