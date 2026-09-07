@@ -184,6 +184,25 @@ as a non-root user and ships a stdlib `/health` HEALTHCHECK. See the
 [Dockerfile](Dockerfile) for the rationale (glibc base for the manylinux
 wheels, `libgomp1` for LightGBM's OpenMP runtime).
 
+### Data drift report
+
+```bash
+python -m rul.drift                          # FD001 train vs FD001 test
+python -m rul.drift --current-subset FD002   # vs a 6-condition subset (big drift)
+```
+
+Evidently compares the **reference** (training data) against **current**
+(serving) data on the exact raw columns the model consumes, writing
+`reports/drift_report.html` (full visual report) and a small committed
+`reports/drift_summary.json`.
+
+On FD001 train-vs-test, **14/17 monitored columns drift** (share 0.82). This is
+expected and instructive: test trajectories are *truncated before failure*, so
+they contain fewer degraded, near-end-of-life cycles — the sensor
+distributions genuinely differ, while the operating settings stay stable. In
+production this same report would flag when incoming sensor data has moved away
+from the training distribution and the model should be retrained.
+
 ---
 
 ## Results

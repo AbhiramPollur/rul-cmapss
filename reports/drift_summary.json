@@ -1,0 +1,42 @@
+{
+  "n_columns": 17,
+  "n_drifted": 14,
+  "drift_share": 0.8235294117647058,
+  "drifted_columns": [
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_17",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "per_column_score": {
+    "op_setting_1": 0.009981008473019266,
+    "op_setting_2": 0.002646102737199689,
+    "sensor_2": 0.4116823086219994,
+    "sensor_3": 0.39535597130037275,
+    "sensor_4": 0.46649418396443865,
+    "sensor_6": 0.023390515144062225,
+    "sensor_7": 0.4404576383595215,
+    "sensor_8": 0.36187466905214516,
+    "sensor_9": 0.3154949752293066,
+    "sensor_11": 0.46788800158883076,
+    "sensor_12": 0.45320354591782125,
+    "sensor_13": 0.34941058061276997,
+    "sensor_14": 0.28230337052053117,
+    "sensor_15": 0.43472505006821754,
+    "sensor_17": 0.41267861390312277,
+    "sensor_20": 0.42177909410477354,
+    "sensor_21": 0.4253258212891406
+  },
+  "reference": "FD001/train",
+  "current": "FD001/test"
+}
