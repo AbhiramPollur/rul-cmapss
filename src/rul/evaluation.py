@@ -56,3 +56,27 @@ def regression_report(y_true: ArrayLike, y_pred: ArrayLike) -> dict[str, float]:
         "mean_abs_error": float(np.mean(np.abs(yp - yt))),
         "mean_error": float(np.mean(yp - yt)),  # +ve => predicts late on average
     }
+
+
+def interval_report(
+    y_true: ArrayLike,
+    lower: ArrayLike,
+    upper: ArrayLike,
+    confidence_level: float,
+) -> dict[str, float]:
+    """Empirical coverage and width of prediction intervals.
+
+    ``coverage`` is the fraction of true values inside ``[lower, upper]``; it
+    should be close to ``confidence_level`` if the conformal calibration holds
+    on this data.
+    """
+    yt, lo, hi = _as_1d(y_true), _as_1d(lower), _as_1d(upper)
+    if not (yt.shape == lo.shape == hi.shape):
+        raise ValueError("y_true, lower and upper must share a shape.")
+    covered = (yt >= lo) & (yt <= hi)
+    return {
+        "confidence_level": float(confidence_level),
+        "coverage": float(np.mean(covered)),
+        "avg_interval_width": float(np.mean(hi - lo)),
+        "median_interval_width": float(np.median(hi - lo)),
+    }

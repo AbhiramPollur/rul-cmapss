@@ -22,7 +22,7 @@ from .config import (
     REPORTS_DIR,
 )
 from .data import load_subset, load_true_rul
-from .evaluation import regression_report
+from .evaluation import interval_report, regression_report
 from .model import RULModel
 
 
@@ -42,9 +42,19 @@ def train_and_evaluate(subset: str = DEFAULT_SUBSET) -> dict:
     preds = preds.reindex(true_rul.index)
     test_metrics = regression_report(true_rul.to_numpy(), preds.to_numpy())
 
+    # Conformal interval coverage on the same test protocol.
+    intervals = model.predict_interval_last_cycle(test_df).reindex(true_rul.index)
+    coverage = interval_report(
+        true_rul.to_numpy(),
+        intervals["lower"].to_numpy(),
+        intervals["upper"].to_numpy(),
+        model.confidence_level,
+    )
+
     report = {
         "subset": subset,
         "test": test_metrics,
+        "conformal": coverage,
         "model": model.metadata,
     }
 
@@ -63,14 +73,20 @@ def train_and_evaluate(subset: str = DEFAULT_SUBSET) -> dict:
 
 def _print_summary(report: dict) -> None:
     t = report["test"]
-    print("\n" + "=" * 48)
+    c = report.get("conformal", {})
+    print("\n" + "=" * 52)
     print(f"  Subset            : {report['subset']}")
     print(f"  Test engines      : {t['n']}")
     print(f"  RMSE              : {t['rmse']:.3f} cycles")
     print(f"  NASA score        : {t['nasa_score']:.1f}")
     print(f"  Mean abs. error   : {t['mean_abs_error']:.3f} cycles")
     print(f"  Mean error (bias) : {t['mean_error']:+.3f}  (+ = predicts late)")
-    print("=" * 48 + "\n")
+    if c:
+        target = c["confidence_level"] * 100
+        print(f"  Conformal target  : {target:.0f}% coverage")
+        print(f"  Empirical coverage: {c['coverage'] * 100:.1f}%")
+        print(f"  Avg interval width: {c['avg_interval_width']:.1f} cycles")
+    print("=" * 52 + "\n")
 
 
 def main(argv: list[str] | None = None) -> None:

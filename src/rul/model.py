@@ -30,6 +30,8 @@ import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
 
 from .config import (
+    CALIBRATION_FRACTION,
+    CONFIDENCE_LEVEL,
     MODEL_FILENAME,
     MODELS_DIR,
     RANDOM_SEED,
@@ -37,6 +39,7 @@ from .config import (
     RUL_CAP,
     VALIDATION_FRACTION,
 )
+from .conformal import fit_split_conformal, intervals_from_mapie
 from .data import compute_rul, last_cycle_rows
 from .features import FeatureBuilder, make_xy
 
@@ -66,28 +69,47 @@ class RULModel:
 
     rul_cap: int = RUL_CAP
     window: int = ROLLING_WINDOW
+    confidence_level: float = CONFIDENCE_LEVEL
     params: dict = field(default_factory=lambda: dict(DEFAULT_PARAMS))
     feature_builder: FeatureBuilder = field(default_factory=FeatureBuilder)
     regressor: lgb.LGBMRegressor | None = None
-    # Populated by rul.conformal in milestone 5 (kept here so the whole
-    # predictor persists as one artifact).
+    # MAPIE SplitConformalRegressor, calibrated on held-out engines (see fit).
     conformal: object | None = None
     metadata: dict = field(default_factory=dict)
 
     # ------------------------------------------------------------------ #
     # Training
     # ------------------------------------------------------------------ #
-    def fit(self, train_df: pd.DataFrame, subset: str = "") -> "RULModel":
-        """Train on a raw run-to-failure frame (RUL is derived internally)."""
+    def fit(self, train_df: pd.DataFrame, subset: str = "", conformalize: bool = True) -> "RULModel":
+        """Train on a raw run-to-failure frame (RUL is derived internally).
+
+        Engines are partitioned into a **fit pool** (for the point model) and a
+        disjoint **calibration** set (for conformal intervals) so the coverage
+        guarantee is not compromised by reusing training data. Pass
+        ``conformalize=False`` to skip interval calibration (faster; tests).
+        """
         labeled = compute_rul(train_df, cap=self.rul_cap)
 
-        # 1) Grouped split for early stopping (no engine crosses the boundary).
+        # 1) Reserve calibration engines, unseen by the point model.
+        if conformalize:
+            calib_splitter = GroupShuffleSplit(
+                n_splits=1, test_size=CALIBRATION_FRACTION, random_state=RANDOM_SEED
+            )
+            pool_idx, calib_idx = next(
+                calib_splitter.split(labeled, groups=labeled["unit"])
+            )
+            df_pool = labeled.iloc[pool_idx].reset_index(drop=True)
+            df_calib = labeled.iloc[calib_idx].reset_index(drop=True)
+        else:
+            df_pool, df_calib = labeled, None
+
+        # 2) Grouped split inside the pool for early stopping (no engine crosses).
         splitter = GroupShuffleSplit(
             n_splits=1, test_size=VALIDATION_FRACTION, random_state=RANDOM_SEED
         )
-        train_idx, val_idx = next(splitter.split(labeled, groups=labeled["unit"]))
-        df_tr = labeled.iloc[train_idx]
-        df_va = labeled.iloc[val_idx]
+        train_idx, val_idx = next(splitter.split(df_pool, groups=df_pool["unit"]))
+        df_tr = df_pool.iloc[train_idx]
+        df_va = df_pool.iloc[val_idx]
 
         tuning_builder = FeatureBuilder(window=self.window)
         X_tr, y_tr = make_xy(df_tr, tuning_builder, fit=True)
@@ -107,22 +129,36 @@ class RULModel:
         )
         best_iter = int(tuner.best_iteration_ or self.params["n_estimators"])
 
-        # 2) Refit on ALL engines with the discovered iteration count.
+        # 3) Refit the point model on the whole fit pool at the best iteration.
         self.feature_builder = FeatureBuilder(window=self.window)
-        X_all, y_all = make_xy(labeled, self.feature_builder, fit=True)
+        X_pool, y_pool = make_xy(df_pool, self.feature_builder, fit=True)
         final_params = {**self.params, "n_estimators": best_iter}
         self.regressor = lgb.LGBMRegressor(**final_params)
-        self.regressor.fit(X_all, y_all)
+        # Fit on ndarray (no column names): MAPIE feeds the estimator numpy
+        # arrays internally, so training the same way avoids sklearn's
+        # "X has no valid feature names" warning at conformalization time.
+        self.regressor.fit(X_pool.to_numpy(), y_pool.to_numpy())
+
+        # 4) Calibrate conformal intervals on the held-out calibration engines.
+        self.conformal = None
+        if conformalize and df_calib is not None:
+            self.conformal = fit_split_conformal(
+                self.regressor, self.feature_builder, df_calib, self.confidence_level
+            )
 
         self.metadata = {
             "subset": subset,
             "rul_cap": self.rul_cap,
             "window": self.window,
+            "confidence_level": self.confidence_level,
             "best_iteration": best_iter,
             "n_features": len(self.feature_builder.feature_names_),
             "kept_columns": list(self.feature_builder.kept_columns_),
             "n_train_rows": int(len(labeled)),
             "n_train_engines": int(labeled["unit"].nunique()),
+            "n_pool_engines": int(df_pool["unit"].nunique()),
+            "n_calib_engines": int(df_calib["unit"].nunique()) if df_calib is not None else 0,
+            "conformalized": bool(self.conformal is not None),
         }
         return self
 
@@ -137,7 +173,7 @@ class RULModel:
         """Point RUL prediction per row of *df* (raw C-MAPSS columns)."""
         self._check_fitted()
         X = self.feature_builder.transform(df)
-        preds = self.regressor.predict(X)
+        preds = self.regressor.predict(X.to_numpy())  # numpy: see fit() note
         return np.clip(preds, 0.0, float(self.rul_cap))
 
     def predict_last_cycle(self, df: pd.DataFrame) -> pd.Series:
@@ -157,6 +193,34 @@ class RULModel:
             index=pd.Index(last["unit"], name="unit"),
             name="pred",
         )
+
+    def _check_conformal(self) -> None:
+        if self.conformal is None:
+            raise RuntimeError(
+                "This model has no conformal calibrator; fit with conformalize=True."
+            )
+
+    def predict_interval(
+        self, df: pd.DataFrame
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Return ``(point, lower, upper)`` per row at ``confidence_level``."""
+        self._check_fitted()
+        self._check_conformal()
+        X = self.feature_builder.transform(df)
+        return intervals_from_mapie(self.conformal, X, float(self.rul_cap))
+
+    def predict_interval_last_cycle(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Point + interval per engine at its last cycle (index = unit)."""
+        self._check_fitted()
+        self._check_conformal()
+        frame = df.reset_index(drop=True)
+        point, lower, upper = self.predict_interval(frame)
+        tagged = frame[["unit", "cycle"]].copy()
+        tagged["point"] = point
+        tagged["lower"] = lower
+        tagged["upper"] = upper
+        last = last_cycle_rows(tagged)
+        return last.set_index("unit")[["point", "lower", "upper"]]
 
     # ------------------------------------------------------------------ #
     # Persistence

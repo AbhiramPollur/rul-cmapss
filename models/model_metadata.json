@@ -2,7 +2,8 @@
   "subset": "FD001",
   "rul_cap": 125,
   "window": 30,
-  "best_iteration": 168,
+  "confidence_level": 0.9,
+  "best_iteration": 322,
   "n_features": 86,
   "kept_columns": [
     "op_setting_1",
@@ -24,5 +25,8 @@
     "sensor_21"
   ],
   "n_train_rows": 20631,
-  "n_train_engines": 100
+  "n_train_engines": 100,
+  "n_pool_engines": 80,
+  "n_calib_engines": 20,
+  "conformalized": true
 }

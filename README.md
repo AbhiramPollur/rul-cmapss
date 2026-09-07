@@ -147,18 +147,21 @@ sections below as they are added.
 
 ## Results
 
-LightGBM baseline on **FD001** (100 test engines, one prediction per engine at
-its last observed cycle vs. the provided true RUL):
+Final model on **FD001** (100 test engines, one prediction per engine at its
+last observed cycle vs. the provided true RUL). The point model is trained on
+the 80% of engines not reserved for conformal calibration:
 
 | Metric | FD001 test |
 |--------|-----------|
-| RMSE   | **17.7 cycles** |
-| NASA score | **615** |
-| Mean absolute error | 12.6 cycles |
-| Mean error (bias) | +0.26 (near-unbiased) |
-| Conformal coverage @ 90% | _TBD (milestone 5)_ |
+| RMSE   | **17.8 cycles** |
+| NASA score | **765** |
+| Mean absolute error | 12.9 cycles |
+| Mean error (bias) | +0.09 (near-unbiased) |
+| Conformal coverage (target 90%) | **86.0%** |
+| Avg. interval width | 47.8 cycles (±23.9) |
 
-Rolling-window sweep that fixed the default window (all else equal):
+Rolling-window sweep that fixed the default window (all else equal, point model
+on all 100 engines):
 
 | window | RMSE | NASA |
 |-------:|-----:|-----:|
@@ -168,8 +171,18 @@ Rolling-window sweep that fixed the default window (all else equal):
 | **30** | **17.73** | **615** |
 | 40 | 18.11 | 760 |
 
-This is a deliberately simple tabular baseline; sensor denoising and sequence
-models (LSTM/CNN) are the natural next steps and typically reach RMSE ~12–14.
+Notes:
+- **Why NASA (765) is higher than the sweep's 615.** The served model holds out
+  20% of engines to calibrate conformal intervals, so its point model sees 80
+  engines instead of 100. RMSE is essentially unchanged (17.7→17.8), but the
+  NASA score is exponentially sensitive to a handful of late-predicted engines
+  in the tail, so it moves more. This is the honest cost of *valid* conformal
+  calibration; cross-conformal (CV+) would reclaim the data at K× training cost.
+- **Coverage 86% vs 90% target** reflects the exchangeability gap: intervals are
+  calibrated on full-trajectory cycles but tested on single truncated snapshots
+  (see [Uncertainty](#uncertainty)).
+- This is a deliberately simple tabular baseline; sensor denoising and sequence
+  models (LSTM/CNN) are the natural next steps and typically reach RMSE ~12–14.
 
 ---
 
