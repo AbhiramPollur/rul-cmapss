@@ -44,9 +44,9 @@ def train_and_evaluate(subset: str = DEFAULT_SUBSET) -> dict:
     preds = model.predict_last_cycle(test_df)
     # Align predictions to the ground-truth unit order.
     preds = preds.reindex(true_rul.index)
+    # RMSE/NASA against the TRUE (uncapped) RUL, the standard reported metric.
     test_metrics = regression_report(true_rul.to_numpy(), preds.to_numpy())
 
-    # Conformal interval coverage on the same test protocol.
     intervals = model.predict_interval_last_cycle(test_df).reindex(true_rul.index)
     coverage = interval_report(
         true_rul.to_numpy(),
@@ -88,10 +88,9 @@ def _print_summary(report: dict) -> None:
     print("\n" + "=" * 52)
     print(f"  Subset            : {report['subset']}")
     print(f"  Test engines      : {t['n']}")
-    print(f"  RMSE              : {t['rmse']:.3f} cycles")
+    print(f"  RMSE              : {t['rmse']:.3f} cycles   (vs true uncapped RUL)")
     print(f"  NASA score        : {t['nasa_score']:.1f}")
     print(f"  Mean abs. error   : {t['mean_abs_error']:.3f} cycles")
-    print(f"  Mean error (bias) : {t['mean_error']:+.3f}  (+ = predicts late)")
     if c:
         target = c["confidence_level"] * 100
         print(f"  Conformal target  : {target:.0f}% coverage")

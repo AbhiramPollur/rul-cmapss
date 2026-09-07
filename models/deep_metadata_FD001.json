@@ -1,0 +1,13 @@
+{
+  "subset": "FD001",
+  "model": "dcnn",
+  "window": 30,
+  "rul_cap": 125,
+  "regime_normalize": false,
+  "ewma_span": 0,
+  "n_features": 17,
+  "n_models": 3,
+  "confidence_level": 0.9,
+  "interval_half_width": 23.314028867085774,
+  "n_train_engines": 100
+}

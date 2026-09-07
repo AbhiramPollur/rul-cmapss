@@ -1,6 +1,6 @@
 {
   "subset": "FD004",
-  "rul_cap": 140,
+  "rul_cap": 160,
   "window": 80,
   "regime_normalize": true,
   "n_regimes": 6,
@@ -8,7 +8,7 @@
   "trend": true,
   "confidence_level": 0.9,
   "calibration_fraction": 0.1,
-  "best_iteration": 788,
+  "best_iteration": 895,
   "n_features": 121,
   "kept_columns": [
     "sensor_2",

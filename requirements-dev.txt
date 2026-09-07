@@ -15,3 +15,6 @@ matplotlib==3.11.0
 nbconvert==7.16.6
 ipykernel==7.1.0
 
+# CNN sequence model (rul.deep). CPU build; training only, the API does not use it.
+torch==2.14.0
+

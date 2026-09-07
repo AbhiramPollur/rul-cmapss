@@ -104,11 +104,11 @@ PROFILES: dict[str, SubsetProfile] = {
     "FD001": SubsetProfile(window=40, rul_cap=125),
     "FD003": SubsetProfile(window=40, rul_cap=125),
     "FD002": SubsetProfile(
-        window=80, rul_cap=140, regime_normalize=True, n_regimes=6,
+        window=80, rul_cap=160, regime_normalize=True, n_regimes=6,
         ewma_span=26, trend=True, calibration_fraction=0.1,
     ),
     "FD004": SubsetProfile(
-        window=80, rul_cap=140, regime_normalize=True, n_regimes=6,
+        window=80, rul_cap=160, regime_normalize=True, n_regimes=6,
         ewma_span=26, trend=True, calibration_fraction=0.1,
     ),
 }

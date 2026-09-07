@@ -2,20 +2,20 @@
   "subset": "FD002",
   "test": {
     "n": 259,
-    "rmse": 21.1248766523036,
-    "nasa_score": 3344.96548266865,
-    "mean_abs_error": 13.385744969470087,
-    "mean_error": -3.7843992259039965
+    "rmse": 20.123377404811134,
+    "nasa_score": 3932.3803660490967,
+    "mean_abs_error": 12.919896065155166,
+    "mean_error": -1.0212044246718748
   },
   "conformal": {
     "confidence_level": 0.9,
-    "coverage": 0.8185328185328186,
-    "avg_interval_width": 46.7013931824627,
-    "median_interval_width": 49.4832372004804
+    "coverage": 0.861003861003861,
+    "avg_interval_width": 56.544948372143395,
+    "median_interval_width": 60.554091679906946
   },
   "model": {
     "subset": "FD002",
-    "rul_cap": 140,
+    "rul_cap": 160,
     "window": 80,
     "regime_normalize": true,
     "n_regimes": 6,
@@ -23,7 +23,7 @@
     "trend": true,
     "confidence_level": 0.9,
     "calibration_fraction": 0.1,
-    "best_iteration": 870,
+    "best_iteration": 614,
     "n_features": 121,
     "kept_columns": [
       "sensor_2",

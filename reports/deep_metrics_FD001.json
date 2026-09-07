@@ -1,0 +1,30 @@
+{
+  "subset": "FD001",
+  "model": "dcnn",
+  "test": {
+    "n": 100,
+    "rmse": 15.05677790936797,
+    "nasa_score": 360.13192276716705,
+    "mean_abs_error": 11.553575097322463,
+    "mean_error": -0.22165851712226867
+  },
+  "conformal": {
+    "confidence_level": 0.9,
+    "coverage": 0.87,
+    "avg_interval_width": 44.529410152435304,
+    "median_interval_width": 46.62805366516113
+  },
+  "model_meta": {
+    "subset": "FD001",
+    "model": "dcnn",
+    "window": 30,
+    "rul_cap": 125,
+    "regime_normalize": false,
+    "ewma_span": 0,
+    "n_features": 17,
+    "n_models": 3,
+    "confidence_level": 0.9,
+    "interval_half_width": 23.314028867085774,
+    "n_train_engines": 100
+  }
+}

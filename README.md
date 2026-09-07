@@ -4,8 +4,9 @@ This project predicts how many operating cycles a turbofan engine has left befor
 it fails, using the [NASA C-MAPSS](https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/)
 run-to-failure simulation data. It is small enough to read in an afternoon but
 shaped like something you would actually put in production: a clean data and
-feature layer, a LightGBM model, calibrated uncertainty on every prediction, a
-FastAPI service, a Docker image, a data-drift report, and CI.
+feature layer, two models (a LightGBM baseline and a 1D-CNN sequence model),
+calibrated uncertainty on every prediction, a FastAPI service, a Docker image, a
+data-drift report, and CI.
 
 All four sub-datasets (FD001 to FD004) are trained and evaluated. Every design
 choice is explained below, and the numbers are reproducible from a fresh clone
@@ -43,9 +44,11 @@ rul-cmapss/
 │   ├── features.py             per-engine rolling-window features (FD001/FD003)
 │   ├── regime.py               regime normalization and features (FD002/FD004)
 │   ├── model.py                RULModel: LightGBM plus conformal, saved as one file
+│   ├── deep.py                 DeepRULModel: 1D-CNN sequence model (best accuracy)
 │   ├── conformal.py            MAPIE split-conformal prediction intervals
 │   ├── evaluation.py           RMSE, the NASA score, and interval coverage
-│   ├── train.py                trains a subset end to end (python -m rul.train)
+│   ├── train.py                trains the LightGBM model (python -m rul.train)
+│   ├── train_deep.py           trains the CNN model (python -m rul.train_deep)
 │   ├── drift.py                Evidently drift report (python -m rul.drift)
 │   └── api.py                  FastAPI service (uvicorn rul.api:app)
 ├── tests/                      pytest suite plus a synthetic data generator
@@ -102,6 +105,16 @@ fitted feature builder, the regressor and the conformal calibrator are saved
 together as a single file, so the thing you evaluate is exactly the thing you
 serve. Predictions are clipped to the sensible range of zero up to the cap.
 
+There is also a second model, a 1D convolutional sequence model
+([`deep.py`](src/rul/deep.py), trained with `python -m rul.train_deep`). Instead
+of one cycle at a time it reads a sliding window of recent cycles, which lets it
+follow the degradation trajectory. It needs PyTorch, so it is a training-time
+tool only; the served API stays on the light LightGBM artifact. The two models
+are compared and the better one is kept per subset. It wins on the clean
+single-condition FD001 (RMSE 15.1 versus LightGBM's 18.8) and loses on the
+six-condition subsets, where the tabular model with regime normalization is
+stronger (see [Results](#results)).
+
 ### Two metrics, always together
 
 RMSE is symmetric and easy to read in cycles. The NASA score from the PHM08
@@ -137,25 +150,47 @@ generalizes. The EWMA span for the six-condition subsets is tied to the window
 
 ## Results
 
-Each model is scored on the official protocol: one prediction per test engine, at
-its last recorded cycle, against the provided true remaining life.
+Every model is scored the standard way: one prediction per test engine, at its
+last recorded cycle, compared against the true remaining life. Two points on the
+metric, because they matter and are easy to get wrong:
 
-| Subset | RMSE (cycles) | NASA score | MAE | Coverage (target 90%) |
-|--------|--------------:|-----------:|----:|:---------------------:|
-| FD001  | 18.8 |  889 | 13.3 | 85% |
-| FD002  | 21.1 | 3345 | 13.4 | 82% |
-| FD003  | 16.0 |  602 | 11.2 | 86% |
-| FD004  | 20.7 | 2130 | 14.7 | 85% |
+- **RMSE is against the true, uncapped RUL** (the actual remaining cycles). That
+  is the number the published records use, so it is directly comparable. An
+  earlier version of this project mistakenly scored against a capped ground
+  truth, which flatters the six-condition subsets enormously; that is fixed.
+- **The RUL cap is a training-time choice only.** It caps the label the model
+  learns from, not the test ground truth, and it is chosen per subset by
+  cross-validation on the training data: 125 for the single-condition subsets and
+  160 for the six-condition ones, whose engines run much longer (up to 195 cycles
+  of true remaining life).
 
-FD002 and FD004 are harder than FD001 and FD003 because of the six operating
-conditions and, for FD003 and FD004, the second fault mode. The regime pipeline
-is what makes the six-condition subsets workable: without it, a plain model on
-FD004 sits around 29 RMSE, and the regime normalization plus denoising and trend
-features bring it down to the number above.
+Best model for each subset:
 
-Every number here comes from a model whose window and cap were chosen on training
-data alone. You can regenerate all of it with `python -m rul.train --subset FDxxx`,
-which writes the model to `models/` and the metrics to `reports/`.
+| Subset | Best model | RMSE | NASA score | Coverage (target 90%) | Reference SOTA |
+|--------|-----------|-----:|-----------:|:---------------------:|:--------------:|
+| FD001  | CNN      | **15.1** |  360 | 87% | ~11.5 |
+| FD002  | LightGBM | **20.1** | 3932 | 86% | ~14.5 |
+| FD003  | LightGBM | **16.0** |  602 | 86% | ~12 |
+| FD004  | LightGBM | **18.9** | 2189 | 92% | ~17 |
+
+Two models are trained and the better one is kept per subset. On the
+single-condition subsets the CNN reads the degradation trajectory well: on FD001
+it cuts RMSE from LightGBM's 18.8 to 15.1. On the six-condition subsets LightGBM
+with regime normalization wins, because a window that keeps jumping between six
+flight conditions is hard for the sequence model even after normalization.
+Regime normalization is what makes those subsets tractable at all: without it a
+plain model on FD004 sits near 29 RMSE.
+
+Honest standing versus the literature: these are solid numbers, on par with
+classic methods, but a few points above the current records (roughly 11 to 17
+across the four subsets). Those records come from larger, GPU-trained
+architectures (multi-scale CNNs, attention, transformers) with heavy tuning. What
+this project offers instead is a correct, honest, end-to-end system where every
+hyperparameter is chosen on training data alone, so the scores are a fair estimate
+of real performance rather than a tuned-on-test best case.
+
+Regenerate any of it with `python -m rul.train --subset FDxxx` (LightGBM) or
+`python -m rul.train_deep --subset FDxxx` (CNN).
 
 ## Running it
 
@@ -166,7 +201,8 @@ pip install -r requirements-dev.txt    # exact pinned versions, matching the com
 pip install -e . --no-deps             # the rul package itself
 
 pytest                                 # run the tests
-python -m rul.train --subset FD001     # retrain if you want; the models are already committed
+python -m rul.train --subset FD001     # retrain the LightGBM model (already committed)
+python -m rul.train_deep --subset FD001 # train the CNN model (best accuracy; needs torch)
 uvicorn rul.api:app --reload           # serve the API at http://127.0.0.1:8000/docs
 ```
 
@@ -222,7 +258,7 @@ tell you the incoming data has moved away from what the model was trained on.
 ## Testing and CI
 
 ```bash
-pytest        # data, features, regime, evaluation, model, conformal, API, drift
+pytest        # data, features, regime, evaluation, model, conformal, CNN, API, drift
 ruff check .  # lint
 ```
 
@@ -240,8 +276,9 @@ the ones I checked, and each is backed by a test rather than a promise.
 Future information leaking into a prediction is the big one. Every feature at a
 given cycle is built only from that cycle and earlier ones. There is a test that
 proves it: the feature vector at cycle *t* is identical whether it is computed from
-the trajectory truncated at *t* or from the full trajectory. Both feature builders
-pass, which also means a single truncated snapshot at serving time gets exactly the
+the trajectory truncated at *t* or from the full trajectory. All three feature
+paths pass this (the plain builder, the regime builder, and the CNN windows),
+which also means a single truncated snapshot at serving time gets exactly the
 features it would have gotten live.
 
 The normalization statistics and the variance filter are learned on training data
@@ -255,13 +292,20 @@ ground truth, with nothing dropped.
 
 ## Limitations and what I would do next
 
-- The windows, caps and EWMA span are chosen from a modest grid. A wider search,
-  or an asymmetric training loss aimed directly at the NASA score, would likely
-  help a little more.
-- A sequence model (an LSTM, a 1D CNN or a small transformer) can edge out a
-  tabular model on the six-condition subsets, at a good deal more complexity.
-- Cross-conformal prediction would let the point model use the calibration engines
-  too, at the cost of training several models.
+- **A few points short of SOTA.** The current records are roughly 11 to 17 RMSE
+  across the four subsets; this project is a few points above each. Closing that
+  gap is the honest hard part.
+- **My sequence model only helps the single-condition subsets.** The CNN wins
+  FD001 but loses to LightGBM on the six-condition subsets: a window that keeps
+  switching between six flight conditions is hard for it even after regime
+  normalization. I also tried a bidirectional LSTM and adding a per-cycle
+  condition signal, and neither beat LightGBM there. Reaching the six-condition
+  records likely needs the heavier, GPU-trained architectures the top papers use
+  (multi-scale CNNs, attention, transformers), which I did not attempt here.
+- **Honest tuning has a cost.** Windows and caps come from a modest CV grid on
+  training data. A wider search, an asymmetric loss aimed at the NASA score, or
+  cross-conformal intervals (to reuse the calibration engines) would each help a
+  little, at more compute.
 
 ## License
 
