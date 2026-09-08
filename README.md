@@ -241,24 +241,23 @@ wheels are built for glibc; it installs `libgomp1` for LightGBM's OpenMP runtime
 runs as a non-root user, bakes in the trained model, and installs only the runtime
 dependencies so the image stays lean.
 
-### Deploy to Hugging Face Spaces
+### Deploy to Koyeb
 
-The same container runs as a Docker Space on Hugging Face, so the API can live at a
-public URL with the interactive docs at `/docs`. Deployment is handled by
-`.github/workflows/deploy-hf.yml`, which ships the current tree to the Space on
-every push to `main`.
+The container runs as a free web service on Koyeb, which builds the Dockerfile
+straight from this repository and redeploys on every push to `main`. The service
+listens on the port Koyeb provides through `$PORT` and falls back to 8000 locally,
+so nothing in the image needs to change between your laptop and the cloud.
 
-The one time setup, all on your own account:
+Steps, all on your own free account and with no credit card:
 
-1. Create a free Hugging Face account and a new Space with the Docker SDK and the
-   blank template.
-2. Make a Hugging Face access token with the write role.
-3. In this repo, under Settings then Secrets and variables then Actions, add a
-   secret `HF_TOKEN` with that token and a variable `HF_SPACE` set to
-   `your-username/your-space`.
+1. Sign up at koyeb.com and start a new Web Service.
+2. Choose GitHub as the source and connect this repository.
+3. Leave the builder on Dockerfile, which Koyeb detects on its own, and pick the
+   free instance.
+4. Set the port to 8000 and deploy.
 
-After that the workflow builds and serves the Space on its own. Until the token and
-variable are set it simply skips, so it never breaks the build.
+The service comes up at a public `koyeb.app` URL, with the interactive API at the
+`/docs` path.
 
 ### The drift report
 

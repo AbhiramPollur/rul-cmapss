@@ -55,8 +55,10 @@ ENV PATH="/opt/venv/bin:$PATH" \
 USER appuser
 EXPOSE 8000
 
-# slim has no curl; use the stdlib for the healthcheck.
+# The service honours $PORT when the host provides one (Koyeb, Render and Cloud
+# Run all inject it) and falls back to 8000 locally, matching EXPOSE above.
+# slim has no curl, so the healthcheck uses the stdlib and reads the same port.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"
+    CMD python -c "import os,sys,urllib.request; p=os.environ.get('PORT','8000'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{p}/health').status==200 else 1)"
 
-CMD ["uvicorn", "rul.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD exec uvicorn rul.api:app --host 0.0.0.0 --port ${PORT:-8000}
