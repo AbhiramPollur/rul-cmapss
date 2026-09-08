@@ -241,6 +241,25 @@ wheels are built for glibc; it installs `libgomp1` for LightGBM's OpenMP runtime
 runs as a non-root user, bakes in the trained model, and installs only the runtime
 dependencies so the image stays lean.
 
+### Deploy to Hugging Face Spaces
+
+The same container runs as a Docker Space on Hugging Face, so the API can live at a
+public URL with the interactive docs at `/docs`. Deployment is handled by
+`.github/workflows/deploy-hf.yml`, which ships the current tree to the Space on
+every push to `main`.
+
+The one time setup, all on your own account:
+
+1. Create a free Hugging Face account and a new Space with the Docker SDK and the
+   blank template.
+2. Make a Hugging Face access token with the write role.
+3. In this repo, under Settings then Secrets and variables then Actions, add a
+   secret `HF_TOKEN` with that token and a variable `HF_SPACE` set to
+   `your-username/your-space`.
+
+After that the workflow builds and serves the Space on its own. Until the token and
+variable are set it simply skips, so it never breaks the build.
+
 ### The drift report
 
 ```bash
