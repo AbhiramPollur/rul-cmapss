@@ -5,7 +5,7 @@ it fails, using the [NASA C-MAPSS](https://www.nasa.gov/intelligent-systems-divi
 run-to-failure simulation data. It is small enough to read in an afternoon but
 shaped like something you would actually put in production: a clean data and
 feature layer, two models (a LightGBM baseline and a 1D-CNN sequence model),
-calibrated uncertainty on every prediction, a FastAPI service, a Docker image, a
+calibrated uncertainty on every prediction, a FastAPI service, an interactive Streamlit demo, a Docker image, a
 data-drift report, and CI.
 
 **Live demo:** the API runs at [rul-cmapss.onrender.com/docs](https://rul-cmapss.onrender.com/docs).
@@ -57,9 +57,11 @@ rul-cmapss/
 │   └── api.py                  FastAPI service (uvicorn rul.api:app)
 ├── tests/                      pytest suite plus a synthetic data generator
 ├── notebooks/01_eda.ipynb      exploratory analysis only, with plots
+├── demo/streamlit_app.py       interactive Streamlit demo UI
 ├── models/                     the trained models, committed
 ├── reports/                    metrics and the drift summary
 ├── Dockerfile                  the API image
+├── render.yaml                 deploys the API to Render
 └── .github/workflows/ci.yml    runs lint and tests on every push
 ```
 
@@ -208,7 +210,20 @@ pytest                                 # run the tests
 python -m rul.train --subset FD001     # retrain the LightGBM model (already committed)
 python -m rul.train_deep --subset FD001 # train the CNN model (best accuracy; needs torch)
 uvicorn rul.api:app --reload           # serve the API at http://127.0.0.1:8000/docs
+streamlit run demo/streamlit_app.py    # the visual demo at http://localhost:8501
 ```
+
+### The demo UI
+
+A Streamlit app in [`demo/`](demo/) gives the model a friendly face: pick a test
+engine, slide to any point in its life, and watch the predicted RUL, its 90%
+interval, and the sensor trends update live. It loads the model directly, so it
+needs no running API. Run it locally with the `streamlit run` line above.
+
+It also deploys to Streamlit Community Cloud for free, straight from this repo:
+create an app pointing at `demo/streamlit_app.py` on the `main` branch. Streamlit
+Cloud installs the `demo/requirements.txt` sitting next to the app, so the API's
+own dependencies stay separate.
 
 ### The API
 

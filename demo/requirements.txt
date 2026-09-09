@@ -1,0 +1,12 @@
+# Dependencies for the Streamlit demo (demo/streamlit_app.py).
+# Streamlit Community Cloud installs these; it finds this file because it sits next
+# to the app's entrypoint. Kept separate from the API's root requirements.txt so
+# the two deploys stay independent. Pinned to versions verified on Python 3.14.
+streamlit==1.63.0
+plotly==5.24.1
+numpy==2.5.3
+pandas==3.0.5
+scikit-learn==1.9.0
+lightgbm==4.7.0
+mapie==1.5.0
+joblib==1.5.2
