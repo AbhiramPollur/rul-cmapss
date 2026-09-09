@@ -8,9 +8,10 @@ feature layer, two models (a LightGBM baseline and a 1D-CNN sequence model),
 calibrated uncertainty on every prediction, a FastAPI service, an interactive Streamlit demo, a Docker image, a
 data-drift report, and CI.
 
-**Live demo:** the API runs at [rul-cmapss.onrender.com/docs](https://rul-cmapss.onrender.com/docs).
-It is on a free host that sleeps when idle, so the first request after a quiet spell
-can take up to a minute to wake, then responds normally.
+**Live demo:** try the interactive app at [rul-cmapss.streamlit.app](https://rul-cmapss.streamlit.app).
+The prediction API is also live at [rul-cmapss.onrender.com/docs](https://rul-cmapss.onrender.com/docs).
+Both run on free hosts that sleep when idle, so the first visit after a quiet spell
+takes a moment to wake, then responds normally.
 
 All four sub-datasets (FD001 to FD004) are trained and evaluated. Every design
 choice is explained below, and the numbers are reproducible from a fresh clone
