@@ -8,6 +8,10 @@ feature layer, two models (a LightGBM baseline and a 1D-CNN sequence model),
 calibrated uncertainty on every prediction, a FastAPI service, a Docker image, a
 data-drift report, and CI.
 
+**Live demo:** the API runs at [rul-cmapss.onrender.com/docs](https://rul-cmapss.onrender.com/docs).
+It is on a free host that sleeps when idle, so the first request after a quiet spell
+can take up to a minute to wake, then responds normally.
+
 All four sub-datasets (FD001 to FD004) are trained and evaluated. Every design
 choice is explained below, and the numbers are reproducible from a fresh clone
 because the data and the trained models are committed.
