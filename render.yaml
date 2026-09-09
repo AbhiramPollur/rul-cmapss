@@ -1,0 +1,13 @@
+# Render Blueprint: runs the FastAPI service as a free Docker web service.
+# In the Render dashboard pick "New > Blueprint", connect this repo, and Render
+# reads this file. The container listens on the $PORT Render injects and falls
+# back to 8000 locally (see the Dockerfile), so no image changes are needed.
+services:
+  - type: web
+    name: rul-cmapss
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true

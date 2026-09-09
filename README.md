@@ -241,23 +241,24 @@ wheels are built for glibc; it installs `libgomp1` for LightGBM's OpenMP runtime
 runs as a non-root user, bakes in the trained model, and installs only the runtime
 dependencies so the image stays lean.
 
-### Deploy to Koyeb
+### Deploy to Render
 
-The container runs as a free web service on Koyeb, which builds the Dockerfile
-straight from this repository and redeploys on every push to `main`. The service
-listens on the port Koyeb provides through `$PORT` and falls back to 8000 locally,
-so nothing in the image needs to change between your laptop and the cloud.
+The container runs as a free web service on Render, which reads the `render.yaml`
+blueprint at the repository root, builds the Dockerfile, and redeploys on every push
+to `main`. The service listens on the `$PORT` Render provides and falls back to 8000
+locally, so the image is the same on your laptop and in the cloud.
 
 Steps, all on your own free account and with no credit card:
 
-1. Sign up at koyeb.com and start a new Web Service.
-2. Choose GitHub as the source and connect this repository.
-3. Leave the builder on Dockerfile, which Koyeb detects on its own, and pick the
-   free instance.
-4. Set the port to 8000 and deploy.
+1. Sign up at render.com.
+2. Choose New then Blueprint and connect this repository. Render picks up
+   `render.yaml` and creates the service on the free plan.
+3. Click Apply and wait for the first build to finish.
 
-The service comes up at a public `koyeb.app` URL, with the interactive API at the
-`/docs` path.
+The service comes up at a public `onrender.com` URL, with the interactive API at the
+`/docs` path. One thing to know about the free plan: it sleeps after about fifteen
+minutes without traffic, so the first request after a quiet spell takes half a minute
+or so to wake before it answers normally.
 
 ### The drift report
 
